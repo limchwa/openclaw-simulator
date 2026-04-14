@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenClaw Agentic Loop Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0e14;
+    --bg2: #13161f;
+    --bg3: #1a1e2a;
+    --card: #181c28;
+    --border: rgba(255,255,255,0.06);
+    --border-h: rgba(255,255,255,0.12);
+    --text: #e4e4e8;
+    --text2: #9a9ba6;
+    --text3: #5e5f6e;
+    --teal: #2dd4a8;
+    --teal-bg: rgba(45,212,168,0.08);
+    --teal-border: rgba(45,212,168,0.2);
+    --purple: #a78bfa;
+    --purple-bg: rgba(167,139,250,0.08);
+    --purple-border: rgba(167,139,250,0.2);
+    --coral: #f97066;
+    --coral-bg: rgba(249,112,102,0.08);
+    --coral-border: rgba(249,112,102,0.2);
+    --amber: #f5a623;
+    --amber-bg: rgba(245,166,35,0.08);
+    --amber-border: rgba(245,166,35,0.2);
+    --green: #4ade80;
+    --green-bg: rgba(74,222,128,0.08);
+    --green-border: rgba(74,222,128,0.2);
+    --blue: #60a5fa;
+    --blue-bg: rgba(96,165,250,0.08);
+    --blue-border: rgba(96,165,250,0.2);
+    --radius: 12px;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+    text-align: center;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    color: var(--text2);
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .wrapper {
+    width: 100%;
+    max-width: 620px;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+
+  .tab {
+    padding: 10px 24px;
+    font-size: 0.85rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text3);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .tab:hover { color: var(--text2); }
+  .tab.active { color: var(--text); border-bottom-color: var(--teal); font-weight: 500; }
+
+  .mode { display: none; }
+  .mode.active { display: block; }
+
+  /* ── WALKTHROUGH ── */
+  .stage-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  .dots {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--bg3);
+    border: 1px solid var(--border-h);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .dot.active {
+    background: var(--teal);
+    border-color: var(--teal);
+    transform: scale(1.3);
+    box-shadow: 0 0 10px rgba(45,212,168,0.3);
+  }
+
+  .dot.visited {
+    background: var(--text3);
+    border-color: var(--text3);
+  }
+
+  .nav-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border-h);
+    background: var(--card);
+    color: var(--text2);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .nav-btn:hover:not(:disabled) { border-color: var(--teal-border); color: var(--teal); }
+  .nav-btn:disabled { opacity: 0.2; cursor: default; }
+
+  .stage-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    transition: border-color 0.3s;
+  }
+
+  .stage-card:hover { border-color: var(--border-h); }
+
+  .sc-num {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  .sc-num.t { background: var(--teal-bg); color: var(--teal); border: 1px solid var(--teal-border); }
+  .sc-num.p { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+  .sc-num.c { background: var(--coral-bg); color: var(--coral); border: 1px solid var(--coral-border); }
+  .sc-num.a { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .sc-num.g { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+
+  .sc-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .sc-desc {
+    font-size: 0.88rem;
+    color: var(--text2);
+    line-height: 1.65;
+    margin-bottom: 14px;
+  }
+
+  .sc-detail {
+    font-size: 0.82rem;
+    color: var(--text3);
+    line-height: 1.6;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .sc-detail code {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    background: var(--bg3);
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: var(--text2);
+  }
+
+  /* ── SANDBOX ── */
+  .sandbox-input {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  .sandbox-input input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-h);
+    background: var(--bg3);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .sandbox-input input:focus { border-color: var(--teal-border); }
+  .sandbox-input input::placeholder { color: var(--text3); }
+
+  .send-btn {
+    padding: 10px 20px;
+    border-radius: var(--radius);
+    border: 1px solid var(--teal-border);
+    background: var(--teal-bg);
+    color: var(--teal);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .send-btn:hover { background: rgba(45,212,168,0.15); border-color: var(--teal); }
+
+  .presets {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .preset {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .preset:hover { border-color: var(--border-h); color: var(--text2); }
+
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .pipe-stage {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+    opacity: 0.15;
+    transition: all 0.5s ease;
+  }
+
+  .pipe-stage.lit { opacity: 1; }
+  .pipe-stage.done { opacity: 0.5; }
+
+  .pipe-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 28px;
+    flex-shrink: 0;
+  }
+
+  .pipe-circle {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--text3);
+    background: var(--bg);
+    flex-shrink: 0;
+    transition: all 0.4s;
+  }
+
+  .pipe-stage.lit .pipe-circle {
+    border-color: var(--teal);
+    background: var(--teal);
+    box-shadow: 0 0 12px rgba(45,212,168,0.3);
+  }
+
+  .pipe-stage.done .pipe-circle {
+    border-color: var(--green);
+    background: var(--green);
+    box-shadow: none;
+  }
+
+  .pipe-connector {
+    flex: 1;
+    width: 2px;
+    background: var(--border-h);
+    min-height: 8px;
+  }
+
+  .pipe-content {
+    flex: 1;
+    padding: 8px 0 22px;
+  }
+
+  .pipe-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .pipe-msg {
+    font-size: 0.78rem;
+    color: var(--text2);
+    font-family: var(--mono);
+    line-height: 1.55;
+    white-space: pre-wrap;
+    min-height: 16px;
+    background: var(--bg3);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .pipe-stage:not(.lit):not(.done) .pipe-msg { background: transparent; border-color: transparent; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 500px) {
+    body { padding: 1rem 0.5rem; }
+    .sandbox-input { flex-direction: column; }
+    .send-btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<h1>OpenClaw agentic loop simulator</h1>
+<p class="subtitle">Learn how messages flow through an autonomous AI agent</p>
+
+<div class="wrapper">
+  <div class="tabs">
+    <button class="tab active" onclick="switchMode('walkthrough')">Walkthrough</button>
+    <button class="tab" onclick="switchMode('sandbox')">Sandbox</button>
+  </div>
+
+  <!-- WALKTHROUGH MODE -->
+  <div id="walkthrough" class="mode active">
+    <div class="stage-nav">
+      <button class="nav-btn" id="prev-btn" onclick="goStage(currentStage-1)" disabled>&#8592;</button>
+      <div class="dots" id="dots"></div>
+      <button class="nav-btn" id="next-btn" onclick="goStage(currentStage+1)">&#8594;</button>
+    </div>
+    <div class="stage-card" id="stage-card"></div>
+  </div>
+
+  <!-- SANDBOX MODE -->
+  <div id="sandbox" class="mode">
+    <div class="presets">
+      <span class="preset" onclick="setPreset('Summarise my last 3 emails')">emails</span>
+      <span class="preset" onclick="setPreset('Remind me to buy groceries at 5pm')">reminder</span>
+      <span class="preset" onclick="setPreset('What is the weather in Singapore?')">weather</span>
+      <span class="preset" onclick="setPreset('Book a table for 2 at a Japanese restaurant tonight')">booking</span>
+      <span class="preset" onclick="setPreset('Hello, how are you?')">simple chat</span>
+    </div>
+    <div class="sandbox-input">
+      <input type="text" id="user-msg" placeholder="Type a message to send to the agent..." value="Summarise my last 3 emails">
+      <button class="send-btn" onclick="runSimulation()">Send</button>
+    </div>
+    <div class="pipeline" id="pipeline"></div>
+  </div>
+</div>
+
+<script>
+// ── WALKTHROUGH ──
+
+const stages = [
+  {
+    num: "01", cls: "t", title: "Channel adapter",
+    desc: "Your message arrives from WhatsApp, Telegram, Slack, or any connected platform. The channel adapter normalises it into a standard format — regardless of source.",
+    detail: "A voice note from WhatsApp and a text from Slack look completely different at the protocol level. The adapter transforms each into a single consistent message object: <code>{sender, body, attachments, channel_metadata}</code>. Voice notes get transcribed before the model ever sees them."
+  },
+  {
+    num: "02", cls: "t", title: "Gateway routing",
+    desc: "The gateway identifies which agent and session this message belongs to, then queues it. Messages in the same session are processed one at a time to prevent state corruption.",
+    detail: "The gateway runs locally as a background daemon, binding to <code>ws://127.0.0.1:18789</code>. It handles routing, authentication, and session management. It never touches the model directly — that separation is a key architectural principle."
+  },
+  {
+    num: "03", cls: "p", title: "Context assembly",
+    desc: "This is the most consequential step. The agent assembles everything the model needs: conversation history, system instructions, available tools, persistent memory, and relevant skill definitions.",
+    detail: "The model has no memory of its own — it only knows what's assembled into this context package. OpenClaw enforces model-specific context limits and keeps a <code>compaction reserve</code> (token buffer) so the model never runs out of room mid-reasoning."
+  },
+  {
+    num: "04", cls: "c", title: "Model inference",
+    desc: "The assembled context is sent to your configured LLM as a standard API call. This could be Claude, GPT, a local Ollama model — OpenClaw is model-agnostic.",
+    detail: "The model receives the full context and decides: should I reply with text, or should I call a tool? This decision is where the <em>agentic</em> behaviour emerges — the model reasons about what <strong>action</strong> to take, not just what to say."
+  },
+  {
+    num: "05", cls: "a", title: "Tool execution",
+    desc: "If the model requests a tool call, the agent runtime intercepts it, executes the tool (browse web, read file, send message, run shell command), captures the result, and feeds it back.",
+    detail: "A tool call is the model outputting structured data like: <code>{tool: 'browser', action: 'open', url: '...'}</code>. The runtime executes this in a controlled environment. The result becomes a new message in the conversation."
+  },
+  {
+    num: "06", cls: "a", title: "Tool loop (repeat 4–5)",
+    desc: "Complex tasks require multiple tool calls. The model might browse a page, extract data, then send an email — each step cycling back through inference and execution. This loop is what makes it truly agentic.",
+    detail: "Unlike a chatbot that responds once, the agent keeps cycling: <em>reason → act → observe → reason → act</em>. A single user request like \"book a flight that fits my schedule\" might trigger 10+ tool calls across calendar, browser, and email."
+  },
+  {
+    num: "07", cls: "g", title: "Response delivery",
+    desc: "Once the model produces a final text reply (no more tool calls needed), the response is routed back through the gateway and delivered to the original channel.",
+    detail: "The response goes back through the same channel adapter that received the original message. The user sees a normal chat reply. Behind the scenes, the conversation history and any new memories are persisted for the next interaction."
+  }
+];
+
+let currentStage = 0;
+const dotsEl = document.getElementById('dots');
+stages.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => goStage(i);
+  dotsEl.appendChild(d);
+});
+
+function goStage(i) {
+  if (i < 0 || i >= stages.length) return;
+  currentStage = i;
+  const s = stages[i];
+  document.getElementById('stage-card').innerHTML = `
+    <span class="sc-num ${s.cls}">Stage ${s.num} of 07</span>
+    <div class="sc-title">${s.title}</div>
+    <div class="sc-desc">${s.desc}</div>
+    <div class="sc-detail">${s.detail}</div>
+  `;
+  document.querySelectorAll('.dot').forEach((d, j) => {
+    d.className = 'dot' + (j === i ? ' active' : j < i ? ' visited' : '');
+  });
+  document.getElementById('prev-btn').disabled = i === 0;
+  document.getElementById('next-btn').disabled = i === stages.length - 1;
+}
+goStage(0);
+
+// ── TABS ──
+
+function switchMode(mode) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.mode').forEach(m => m.classList.remove('active'));
+  document.getElementById(mode).classList.add('active');
+  document.querySelector(`.tab[onclick*="${mode}"]`).classList.add('active');
+}
+
+// ── SANDBOX ──
+
+function setPreset(text) {
+  document.getElementById('user-msg').value = text;
+}
+
+function detectIntent(m) {
+  const ml = m.toLowerCase();
+  if (ml.includes('email') || ml.includes('inbox') || ml.includes('mail')) return 'email';
+  if (ml.includes('remind') || ml.includes('alarm') || ml.includes('timer') || ml.includes('schedule')) return 'reminder';
+  if (ml.includes('weather') || ml.includes('temperature') || ml.includes('rain') || ml.includes('umbrella')) return 'weather';
+  if (ml.includes('book') || ml.includes('reserv') || ml.includes('restaurant') || ml.includes('table for')) return 'booking';
+  return 'chat';
+}
+
+function getSimStages(m) {
+  const intent = detectIntent(m);
+  const needsTool = intent !== 'chat';
+
+  const base = [
+    {
+      label: "1. Channel adapter",
+      msg: `Received from WhatsApp:\n{\n  sender: "you",\n  body: "${m.length > 50 ? m.slice(0,47) + '...' : m}",\n  attachments: [],\n  channel: "whatsapp"\n}`
+    },
+    {
+      label: "2. Gateway routing",
+      msg: `Routed → agent: "assistant" | session: #a3f2\nQueue position: 1 (no pending messages)\nSession history: 12 prior turns loaded`
+    },
+    {
+      label: "3. Context assembly",
+      msg: `Assembled context (${1800 + Math.floor(Math.random()*1200)} tokens):\n  System prompt ··· 340 tokens\n  Persistent memory ··· ${400 + Math.floor(Math.random()*200)} tokens\n  Conversation history ··· ${800 + Math.floor(Math.random()*400)} tokens\n  Active skills ··· ${needsTool ? '3' : '0'} (${needsTool ? getSkillsForIntent(intent) : 'none needed'})\n  User message ··· ${Math.ceil(m.length/4)} tokens\n  Compaction reserve ··· 800 tokens`
+    }
+  ];
+
+  if (!needsTool) {
+    base.push({
+      label: "4. Model inference",
+      msg: `Model decided: TEXT REPLY\n(No tools needed — responding directly)\nTokens generated: ${40 + Math.floor(Math.random()*30)}`
+    });
+    base.push({
+      label: "5–6. Tool loop",
+      msg: `(Skipped — direct reply, no tool calls)`
+    });
+  } else {
+    base.push({
+      label: "4. Model inference",
+      msg: `Model decided: TOOL CALL\n${getToolCall(intent)}`
+    });
+    base.push({
+      label: "5. Tool execution",
+      msg: getToolResult(intent)
+    });
+    base.push({
+      label: "6. Loop → back to inference",
+      msg: getLoopResult(intent)
+    });
+  }
+
+  base.push({
+    label: "7. Response delivery",
+    msg: getDelivery(m, intent)
+  });
+
+  return base;
+}
+
+function getSkillsForIntent(intent) {
+  const map = {
+    email: 'gmail, browser, calendar',
+    reminder: 'calendar, notifications',
+    weather: 'browser, location',
+    booking: 'browser, calendar, maps'
+  };
+  return map[intent] || 'browser';
+}
+
+function getToolCall(intent) {
+  const map = {
+    email: '{ tool: "gmail", action: "list_recent", count: 3 }',
+    reminder: '{ tool: "calendar", action: "create_reminder",\n  params: { time: "17:00", label: "Buy groceries" } }',
+    weather: '{ tool: "browser", action: "search",\n  query: "weather Singapore today" }',
+    booking: '{ tool: "browser", action: "search",\n  query: "Japanese restaurants near me open tonight" }'
+  };
+  return map[intent] || '{ tool: "browser", action: "search" }';
+}
+
+function getToolResult(intent) {
+  const map = {
+    email: `Gmail API returned 3 results:\n  1. "Q3 Budget Review" — boss@work.com (2h ago)\n  2. "Lunch tomorrow?" — friend@mail.com (5h ago)\n  3. "Invoice #4021" — vendor@co.com (1d ago)`,
+    reminder: `Calendar API response:\n  { status: "created",\n    reminder: "Buy groceries",\n    time: "17:00 SGT",\n    notification: "whatsapp" }`,
+    weather: `Browser returned:\n  Singapore: 31°C, partly cloudy\n  Humidity: 75% | Wind: 12 km/h\n  Chance of rain: 40% (afternoon)`,
+    booking: `Browser returned 4 results:\n  1. Hashida Sushi — 4.7★ ($$$$) — 2 slots at 7pm\n  2. Ippudo — 4.3★ ($$) — available all evening\n  3. Omakase at Sushi Kimura — 4.8★ ($$$) — 8pm only\n  4. Ramen Keisuke — 4.1★ ($) — no reservation needed`
+  };
+  return map[intent] || 'Tool returned results';
+}
+
+function getLoopResult(intent) {
+  const map = {
+    email: `Model processes tool result...\nDecision: TEXT REPLY (summarise the 3 emails)\nNo further tools needed → exit loop`,
+    reminder: `Model processes tool result...\nDecision: TEXT REPLY (confirm reminder created)\nNo further tools needed → exit loop`,
+    weather: `Model processes tool result...\nDecision: TEXT REPLY (report weather + advice)\nNo further tools needed → exit loop`,
+    booking: `Model processes tool result...\nDecision: ANOTHER TOOL CALL\n{ tool: "browser", action: "book",\n  restaurant: "Hashida Sushi", time: "7pm", party: 2 }\n\n→ Tool returns: { status: "confirmed", ref: "#HS2241" }\n→ Model: TEXT REPLY (confirm booking) → exit loop`
+  };
+  return map[intent] || 'Model decided: TEXT REPLY → exit loop';
+}
+
+function getDelivery(m, intent) {
+  const map = {
+    email: `→ Sent to WhatsApp:\n\n"Here are your last 3 emails:\n\n1. Q3 Budget Review from your boss (2h ago)\n   Requesting sign-off on the revised forecast.\n\n2. Lunch invite from a friend (5h ago)\n   Asking about tomorrow at 12:30.\n\n3. Vendor invoice #4021 (yesterday)\n   SGD 2,400 for cloud hosting — due in 14 days.\n\nWant me to reply to any of these?"`,
+    reminder: `→ Sent to WhatsApp:\n\n"Done! I've set a reminder for 5:00 PM SGT today to buy groceries. I'll ping you here when it's time. 🛒"`,
+    weather: `→ Sent to WhatsApp:\n\n"It's 31°C in Singapore right now — partly cloudy with 75% humidity. There's a 40% chance of rain this afternoon, so you might want to grab an umbrella if you're heading out."`,
+    booking: `→ Sent to WhatsApp:\n\n"All set! I've booked a table for 2 at Hashida Sushi tonight at 7pm. Confirmation ref: #HS2241.\n\nIt's at 333A Orchard Road — about 15 min by MRT from your place. Want me to set a reminder to leave?"`,
+    chat: `→ Sent to WhatsApp:\n\n"Hey! I'm doing well, thanks for asking. Is there anything I can help you with today?"`
+  };
+  return map[intent] || `→ Sent to WhatsApp:\n\n"Here's what I found..."`;
+}
+
+function runSimulation() {
+  const msg = document.getElementById('user-msg').value.trim();
+  if (!msg) return;
+  const pipeline = document.getElementById('pipeline');
+  pipeline.innerHTML = '';
+
+  const simStages = getSimStages(msg);
+
+  simStages.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'pipe-stage';
+    div.id = `ps-${i}`;
+    const isLast = i === simStages.length - 1;
+    div.innerHTML = `
+      <div class="pipe-line">
+        <div class="pipe-circle"></div>
+        ${!isLast ? '<div class="pipe-connector"></div>' : ''}
+      </div>
+      <div class="pipe-content">
+        <div class="pipe-label">${s.label}</div>
+        <div class="pipe-msg" id="pm-${i}"></div>
+      </div>
+    `;
+    pipeline.appendChild(div);
+  });
+
+  let idx = 0;
+  function lightNext() {
+    if (idx >= simStages.length) return;
+    if (idx > 0) document.getElementById(`ps-${idx-1}`).className = 'pipe-stage done';
+    const el = document.getElementById(`ps-${idx}`);
+    el.className = 'pipe-stage lit';
+    document.getElementById(`pm-${idx}`).textContent = simStages[idx].msg;
+    idx++;
+    if (idx < simStages.length) setTimeout(lightNext, 900);
+  }
+  setTimeout(lightNext, 400);
+}
+
+// Allow Enter key to send
+document.getElementById('user-msg').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') runSimulation();
+});
+</script>
+</body>
+</html>
